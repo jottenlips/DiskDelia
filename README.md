@@ -12,6 +12,10 @@ DiskDelia helps you find what's eating your disk space — with a special focus 
 
 ---
 
+![DiskDelia Screenshot](diskdelia.png)
+
+---
+
 ## Features
 
 - **Developer-aware scanning** — Automatically identifies 60+ programming-related directories (`node_modules`, `.venv`, `target`, `DerivedData`, `.cargo`, `.conda`, Docker data, and many more)
