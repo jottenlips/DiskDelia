@@ -7,7 +7,7 @@
 DiskDelia helps you find what's eating your disk space — with a special focus on developer bloat like `node_modules`, virtual environments, build caches, and Xcode's infamous `DerivedData`. It comes in two flavors: a retro-styled GUI app and a fast CLI tool.
 
 ![macOS](https://img.shields.io/badge/platform-macOS-blue)
-![Python](https://img.shields.io/badge/python-3.8%2B-green)
+![Python](https://img.shields.io/badge/python-3.11%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-yellow)
 
 ---
@@ -126,7 +126,7 @@ The GUI uses threaded scanning so the interface stays responsive during analysis
 ## Requirements
 
 - macOS (uses `du`, `find`, and `open` commands)
-- Python 3.8+ with tkinter (included with macOS Python and most installers)
+- Python 3.11+ with tkinter
 - No third-party packages needed
 
 ## License
