@@ -1,0 +1,125 @@
+name: Build DMG
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build .app bundle
+        run: |
+          APP_NAME="DiskDelia"
+          VERSION="1.0"
+          DIST_DIR="dist"
+          BUILD_DIR="build"
+          APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
+
+          pyinstaller \
+            --name "$APP_NAME" \
+            --onefile \
+            --windowed \
+            --noconfirm \
+            --clean \
+            --distpath "$DIST_DIR" \
+            --workpath "$BUILD_DIR" \
+            --specpath "$BUILD_DIR" \
+            storage-app.py
+
+          # If PyInstaller didn't create .app, build it manually
+          if [ ! -d "$APP_BUNDLE" ]; then
+            echo "Creating .app bundle manually..."
+            mkdir -p "$APP_BUNDLE/Contents/MacOS"
+            mkdir -p "$APP_BUNDLE/Contents/Resources"
+
+            if [ -f "$DIST_DIR/$APP_NAME" ]; then
+              mv "$DIST_DIR/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+            fi
+
+            cat > "$APP_BUNDLE/Contents/Info.plist" << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleName</key>
+              <string>DiskDelia</string>
+              <key>CFBundleDisplayName</key>
+              <string>DiskDelia</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.diskdelia.app</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleExecutable</key>
+              <string>DiskDelia</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+              <key>LSUIElement</key>
+              <false/>
+          </dict>
+          </plist>
+          PLIST
+          fi
+
+          echo "App bundle created at $APP_BUNDLE"
+
+      - name: Create DMG
+        run: |
+          APP_NAME="DiskDelia"
+          VERSION="1.0"
+          DIST_DIR="dist"
+          DMG_STAGING="$DIST_DIR/dmg_staging"
+          DMG_TMP="$DIST_DIR/tmp.dmg"
+          DMG_FINAL="$DIST_DIR/$APP_NAME-$VERSION.dmg"
+
+          mkdir -p "$DMG_STAGING"
+          cp -R "$DIST_DIR/$APP_NAME.app" "$DMG_STAGING/"
+          ln -s /Applications "$DMG_STAGING/Applications"
+
+          hdiutil create \
+            -volname "$APP_NAME" \
+            -srcfolder "$DMG_STAGING" \
+            -ov \
+            -format UDRW \
+            "$DMG_TMP" \
+            -quiet
+
+          hdiutil convert "$DMG_TMP" \
+            -format UDZO \
+            -o "$DMG_FINAL" \
+            -quiet
+
+          rm -rf "$DMG_TMP" "$DMG_STAGING"
+
+          echo "DMG created at $DMG_FINAL"
+          ls -lh "$DMG_FINAL"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DiskDelia-DMG
+          path: dist/DiskDelia-1.0.dmg
+          if-no-files-found: error
